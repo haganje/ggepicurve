@@ -1,119 +1,117 @@
-#' Ordre d'une observation pour une semaine
-#'
-#' @description Calcul pour chaque observation son rang en fonction de la semaine et du type de cas (optionel).
-#'
-#' @param date_evenement Vecteur de dates de l'événement
-#' @param limite_temporelle Limite temporelle, par défaut semaine. Valeurs possibles : voir arguement format dans strftime
-#' @return Vecteur numérique de même longeur que le vecteur de dates avec le rang pour chaque periode
-
-range_periode <- function(date_evenement, limite_temporelle = "%W") {
-
-  # Donner un ordre aux observations (pour éviter problème si le vecteur de
-  # de date n'est pas trié)
-  ordre_observations <- order(date_evenement)
-
-  # Transformer les dates en numéro de semaine
-  periodes <- strftime(x = date_evenement, format = limite_temporelle)
-
-  # Calculer l'ordre pour chaque semaine
-  rangs <- aggregate(x = ordre_observations, by = list(periode = periodes), order)
-
-  # Retourner un vecteur
-  unlist(rangs$x)
-}
-
-range_periode_type <- function(date_evenement, groupe, limite_temporelle = "%W") {
-  # Créer une df avec un id par date
-  id <- seq_len(length(date_evenement))
-
-  df <- data.frame(
-    date_evenement,
-    id ,
-    groupe,
-    rang_groupe = NA_integer_
-  )
-
-  # Trier par date + groupe
-  df_ordre <- df[order(df$groupe, df$date_evenement),]
-
-  #Pour chaque groupe, donner un rang
-  groupes <- unique(groupe)
-
-
-  for(un_groupe in groupes) {
-    df$rang_groupe[groupe == un_groupe] <- range_periode(
-      df$date_evenement[groupe == un_groupe],
-      limite_temporelle = limite_temporelle
-      )
-  }
-
-  # retourner ordres triés
-  df$rang_groupe[order(df$id)]
-}
-
-
 #' Create an object df_epidemic
 #'
-#' @param dates_evenements Vector of dates
-#' @param groupe_couleur Vector of character
+#' @param dates Vector of dates
+#' @param group_color Vector of character
 #' @param groupe_facet Vector of character
-#' @param limite_temporelle Character: either NA (days), "%W" (weeks) or "%m" (month)
+#' @param period_limit A character vector of size 1. Either "day", "week" (default) or "month".
 #' @param id Vector of character. The id of each obs. If NULL, then id will be autoassigned in the order of the dates.
 #'
 #' @return A data.frame
-prepare_df <- function(dates_evenements, groupe_couleur, groupe_facet = NA, limite_temporelle = "%W", id = NULL) {
-  if(is.null(id))
-    id <- order(dates_evenements)
+#' @export
 
-  ordre_periode <- range_periode(dates_evenements, limite_temporelle)
+prepare_df <- function(
+  dates,
+  group_color,
+  groupe_facet = NA,
+  period_limit = "week",
+  id = NULL
+  ) {
 
-  # Par semaine
-  periode <- as.integer(strftime(x = dates_evenements ,format = limite_temporelle))
-  annee <- as.integer(strftime(x = dates_evenements, format = "%Y"))
+  # Check input ----------------------------------------------------------
 
+  stopifnot(
+    # dates must be a Date class
+    class(dates) == "Date",
+    # no NA in dates
+    !any(is.na(dates))
+    )
 
-  ordre_periode_facet <- range_periode_type(date_evenement = dates_evenements, groupe = groupe_facet)
-# df_raw$week <- factor(as.integer(semaines), levels = seq_len(max(semaines)))
+  # Create id of not given
+  date_order <- rank(dates, ties.method = "first")
+
+  if(is.null(id)) id <- date_order
+
+  # Create an ordered data frame
   df <- data.frame(
     id,
-    dates_evenements,
-    periode,
-    annee,
-    groupe_couleur,
-    groupe_facet,
-    ordre_periode,
-    ordre_periode_facet
+    date_order,
+    dates,
+    group_color
   )
+
+  time_period_formats <- list(
+    "day"   = "%m-%d",
+    "week"  = "%W"   ,
+    "month" = "%m"
+  )
+
+  period_format <- time_period_formats[[period_limit]]
+
+  period_full_format <- paste0("%Y-", period_format)
+
+  periods_levels <-  create_all_period_levels(dates, period_full_format)
+
+  period_name <- strftime(x = dates ,format = period_full_format)
+
+  # Ordered factor with all levels to plot correctly
+  df$period <- ordered(period_name, levels = periods_levels)
+
+  df$period_printed <- strftime(x = dates ,format = period_format)
+
+  df$year <- as.integer(strftime(x = dates, format = "%Y"))
+
+  df <- df[order(df$dates), ]
+
+  #TODO: Refactor code (as a function)
+  df$ordre_periode <- as.integer(unlist(aggregate(date_order ~ period, data = df, FUN = order)[["date_order"]]))
+
+  # Placeholder for faceting group
+  df$group_facet <- "All"
+  df$group_facet_rank <- df$ordre_periode
 
   class(df) <- c(class(df), "epidemic_df")
 
   df
 }
 
+# For faceting, just stack prepare_df for each group (Keep prepare_df simple)
+
+
 #' Make a ggplot from outbreak data
 #'
-#' @param df A data.frame tailored with the prepare_df function
+#' @param df A data.frame prepared with the prepare_df function
 #' @return A ggplot object
 #' @import ggplot2
+#' @export
+#' @examples
+#' df_outbreak <- prepare_df(dates = outbreak_sim$dates, group_color = outbreak_sim$yard)
+#' plot_ggcurve(df_outbreak)
 
 plot_ggcurve <- function(df){
   ggp <- ggplot(df) +
-    aes(x = periode, fill = as.factor(groupe_couleur), y = ordre_periode_facet, label = id) +
-    # scale_x_discrete(name = "Semaine", drop = FALSE) +
+    aes(
+      x = period,
+      fill = group_color,
+      y = group_facet_rank,
+      label = id
+      ) +
     geom_label(show.legend = TRUE, vjust = "top", size = 4) +
     scale_y_continuous(
       name = "Nombre de cas\n par semaine",
-      limits = c(0, max(df$ordre_periode_facet)),
+      limits = c(0, max(df$group_facet_rank)),
       minor_breaks = NULL
     ) +
-    scale_x_continuous(
-      name = "Semaine",
-      limits = c(1, max(df$periode)),
-      minor_breaks = seq_len(max(df$periode)),
-      breaks = c(1, seq(from = 5, to = max(df$periode), by = 5))
-    ) +
-    facet_grid(groupe_facet~annee) +
-    ggtitle("Courbe épidémique")
+    scale_x_discrete(drop = FALSE, labels = unique(df$period_printed)) +
+    facet_grid(group_facet~.)
 
+  # TODO : ajouter l'année en trouvant à chaque fois le x mini pour chaque année
   ggp
+}
+
+#' Helper fonction
+create_all_period_levels <- function(dates, format){
+  date_min <- as.Date(min(dates))
+  date_max <- as.Date(max(dates)) + 1
+  seq_day <- seq(from = date_min, to = date_max, by = "day")
+  unique(strftime(seq_day, format))
 }
