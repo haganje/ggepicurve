@@ -52,6 +52,15 @@ range_periode_type <- function(date_evenement, groupe, limite_temporelle = "%W")
 }
 
 
+#' Create an object df_epidemic
+#'
+#' @param dates_evenements Vector of dates
+#' @param groupe_couleur Vector of character
+#' @param groupe_facet Vector of character
+#' @param limite_temporelle Character: either NA (days), "%W" (weeks) or "%m" (month)
+#' @param id Vector of character. The id of each obs. If NULL, then id will be autoassigned in the order of the dates.
+#'
+#' @return A data.frame
 prepare_df <- function(dates_evenements, groupe_couleur, groupe_facet = NA, limite_temporelle = "%W", id = NULL) {
   if(is.null(id))
     id <- order(dates_evenements)
@@ -65,7 +74,7 @@ prepare_df <- function(dates_evenements, groupe_couleur, groupe_facet = NA, limi
 
   ordre_periode_facet <- range_periode_type(date_evenement = dates_evenements, groupe = groupe_facet)
 # df_raw$week <- factor(as.integer(semaines), levels = seq_len(max(semaines)))
-  data.frame(
+  df <- data.frame(
     id,
     dates_evenements,
     periode,
@@ -75,23 +84,8 @@ prepare_df <- function(dates_evenements, groupe_couleur, groupe_facet = NA, limi
     ordre_periode,
     ordre_periode_facet
   )
-}
 
+  class(df) <- c(class(df), "epidemic_df")
 
-set_panel_size <- function(p=NULL, g=ggplotGrob(p), file=NULL,
-                           margin = unit(1,"mm"),
-                           width=unit(4, "cm"),
-                           height=unit(4, "cm")){
-
-  panels <- grep("panel", g$layout$name)
-  panel_index_w<- unique(g$layout$l[panels])
-  panel_index_h<- unique(g$layout$t[panels])
-  nw <- length(panel_index_w)
-  nh <- length(panel_index_h)
-
-    g$widths[panel_index_w] <-  rep(width,  nw)
-    g$heights[panel_index_h] <- rep(height, nh)
-
-
-  g
+  df
 }
