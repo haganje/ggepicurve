@@ -89,3 +89,31 @@ prepare_df <- function(dates_evenements, groupe_couleur, groupe_facet = NA, limi
 
   df
 }
+
+#' Make a ggplot from outbreak data
+#'
+#' @param df A data.frame tailored with the prepare_df function
+#' @return A ggplot object
+#' @import ggplot2
+
+plot_ggcurve <- function(df){
+  ggp <- ggplot(df) +
+    aes(x = periode, fill = as.factor(groupe_couleur), y = ordre_periode_facet, label = id) +
+    # scale_x_discrete(name = "Semaine", drop = FALSE) +
+    geom_label(show.legend = TRUE, vjust = "top", size = 4) +
+    scale_y_continuous(
+      name = "Nombre de cas\n par semaine",
+      limits = c(0, max(df$ordre_periode_facet)),
+      minor_breaks = NULL
+    ) +
+    scale_x_continuous(
+      name = "Semaine",
+      limits = c(1, max(df$periode)),
+      minor_breaks = seq_len(max(df$periode)),
+      breaks = c(1, seq(from = 5, to = max(df$periode), by = 5))
+    ) +
+    facet_grid(groupe_facet~annee) +
+    ggtitle("Courbe épidémique")
+
+  ggp
+}
