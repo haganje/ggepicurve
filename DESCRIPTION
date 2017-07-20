@@ -1,11 +1,11 @@
 Package: ggepicurve
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Epidemic curve for hospital outbreak with ggplot
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
+Author: Joris Muller
+Maintainer: Joris Muller <jomuller@jom.link>
 Description: More about what it does (maybe more than one line)
     Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+License: MIT
 Encoding: UTF-8
 LazyData: true
