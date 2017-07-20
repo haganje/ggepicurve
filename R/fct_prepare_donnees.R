@@ -1,4 +1,4 @@
-#' Create an object df_epidemic
+#, labels = unique(df$period_printed)' Create an object df_epidemic
 #'
 #' @param dates Vector of dates
 #' @param group_color Vector of character
@@ -56,10 +56,6 @@ prepare_df <- function(
   # Ordered factor with all levels to plot correctly
   df$period <- ordered(period_name, levels = periods_levels)
 
-  df$period_printed <- strftime(x = dates ,format = period_format)
-
-  df$year <- as.integer(strftime(x = dates, format = "%Y"))
-
   df <- df[order(df$dates), ]
 
   #TODO: Refactor code (as a function)
@@ -101,7 +97,8 @@ plot_ggcurve <- function(df){
       limits = c(0, max(df$group_facet_rank)),
       minor_breaks = NULL
     ) +
-    scale_x_discrete(drop = FALSE, labels = unique(df$period_printed)) +
+    scale_x_discrete(drop = FALSE) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
     facet_grid(group_facet~.)
 
   # TODO : ajouter l'année en trouvant à chaque fois le x mini pour chaque année
