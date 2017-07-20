@@ -1,4 +1,4 @@
-#, labels = unique(df$period_printed)' Create an object df_epidemic
+#' Create an object df_epidemic
 #'
 #' @param dates Vector of dates
 #' @param group_color Vector of character
@@ -49,7 +49,7 @@ prepare_df <- function(
 
   period_full_format <- paste0("%Y-", period_format)
 
-  periods_levels <-  create_all_period_levels(dates, period_full_format)
+  periods_levels <- create_all_period_levels(dates, period_full_format)
 
   period_name <- strftime(x = dates ,format = period_full_format)
 
