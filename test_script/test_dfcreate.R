@@ -6,8 +6,8 @@ z <- prepare_df(dates = outbreak_sim$dates, group_color = outbreak_sim$yard, gro
 
 plot_ggcurve(z)
 
-z <- prepare_df(dates = outbreak_sim$dates, group_color = outbreak_sim$yard, group_facet_vertical = strftime(outbreak_sim$dates, format = "%Y"))
-plot_ggcurve(z, facet_scale = "free_x") + scale_x_discrete(name = "Semaine", drop = TRUE)
+z <- prepare_df(dates = outbreak_sim$dates, group_color = outbreak_sim$yard, group_facet_horizontal= strftime(outbreak_sim$dates, format = "%Y"))
+plot_ggcurve(z, period_numeric = T)
 
 prepare_df("aes")
 prepare_df(c(as.Date(c("2017-01-01", NA))))
